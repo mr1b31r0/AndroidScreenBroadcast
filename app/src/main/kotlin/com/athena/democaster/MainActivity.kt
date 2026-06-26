@@ -34,6 +34,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.btnScan.setOnClickListener { launchScanner() }
+        binding.btnReverse.setOnClickListener {
+            startActivity(Intent(this, ReverseActivity::class.java))
+        }
     }
 
     private fun launchScanner() {

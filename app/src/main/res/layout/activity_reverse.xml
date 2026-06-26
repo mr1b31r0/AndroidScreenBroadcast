@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="#000000"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#CCCCCC"
+        android:textSize="14sp"
+        android:fontFamily="monospace"
+        android:gravity="center"
+        android:layout_marginBottom="16dp"
+        android:text="Starting…" />
+
+    <ImageView
+        android:id="@+id/ivQr"
+        android:layout_width="260dp"
+        android:layout_height="260dp"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="QR code" />
+
+    <TextView
+        android:id="@+id/tvHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#888888"
+        android:textSize="12sp"
+        android:gravity="center"
+        android:lineSpacingMultiplier="1.4" />
+
+</LinearLayout>
