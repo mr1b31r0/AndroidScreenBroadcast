@@ -23,8 +23,6 @@ import android.util.Log
 import android.view.WindowManager
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
-import java.net.InetAddress
-import java.net.NetworkInterface
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.atomic.AtomicBoolean
@@ -112,13 +110,12 @@ class ReverseService : Service() {
         )
     }
 
-    // ── HTTP server ───────────────────────────────────────────────────────────
+    // ── HTTP server + Tor hidden service ──────────────────────────────────────
 
     private fun runHttpServer() {
         try {
             serverSocket = ServerSocket(HTTP_PORT, 4)
-            val ip  = getLocalIp() ?: "0.0.0.0"
-            val url = "http://$ip:$HTTP_PORT"
+            val url = setupTorHiddenService()
             sendBroadcast(Intent(ACTION_SERVER_READY).putExtra(EXTRA_SERVER_URL, url))
 
             while (!shutdownOnce.get()) {
@@ -193,18 +190,52 @@ class ReverseService : Service() {
         }
     }
 
-    // ── helpers ───────────────────────────────────────────────────────────────
+    // ── Tor hidden service via Orbot control port ─────────────────────────────
 
-    private fun getLocalIp(): String? = try {
-        NetworkInterface.getNetworkInterfaces()?.toList()
-            ?.flatMap { it.inetAddresses.toList() }
-            ?.firstOrNull { !it.isLoopbackAddress && it is InetAddress && it.hostAddress?.contains('.') == true }
-            ?.hostAddress
-    } catch (_: Exception) { null }
+    private var torControlSocket: Socket? = null
+    private var torServiceId: String?     = null
+
+    private fun setupTorHiddenService(): String {
+        // Orbot exposes the Tor control port on 9051 (localhost).
+        // Null authentication works when Orbot is configured for localhost-only control.
+        torControlSocket = Socket("127.0.0.1", 9051)
+        val reader = torControlSocket!!.getInputStream().bufferedReader()
+        val writer = torControlSocket!!.getOutputStream().writer()
+
+        fun send(cmd: String): List<String> {
+            writer.write("$cmd\r\n"); writer.flush()
+            val lines = mutableListOf<String>()
+            var line: String
+            do { line = reader.readLine() ?: break; lines.add(line) } while (!line.startsWith("250 ") && !line.startsWith("5"))
+            return lines
+        }
+
+        val auth = send("AUTHENTICATE \"\"")
+        if (!auth.any { it.startsWith("250") })
+            throw Exception("Tor auth failed: ${auth.firstOrNull()}")
+
+        val reply = send("ADD_ONION NEW:ED25519-V3 Flags=DiscardPK Port=80,127.0.0.1:$HTTP_PORT")
+        torServiceId = reply.firstOrNull { it.startsWith("250-ServiceID=") }
+            ?.removePrefix("250-ServiceID=")
+            ?: throw Exception("ADD_ONION failed: $reply")
+
+        return "http://$torServiceId.onion"
+    }
+
+    private fun removeTorHiddenService() {
+        try {
+            torServiceId?.let { id ->
+                val writer = torControlSocket?.getOutputStream()?.writer() ?: return
+                writer.write("DEL_ONION $id\r\n"); writer.flush()
+            }
+        } catch (_: Exception) {}
+        try { torControlSocket?.close() } catch (_: Exception) {}
+    }
 
     fun shutdown() {
         if (!shutdownOnce.compareAndSet(false, true)) return
         try { serverSocket?.close() } catch (_: Exception) {}
+        removeTorHiddenService()
         virtualDisplay?.release()
         imageReader?.close()
         mediaProjection?.stop()
