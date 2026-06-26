@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="#000000"
+    android:padding="32dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Athena\nDemo Caster"
+        android:textColor="#FFFFFF"
+        android:textSize="28sp"
+        android:gravity="center"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Requires Orbot to be running"
+        android:textColor="#888888"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:layout_marginBottom="48dp" />
+
+    <Button
+        android:id="@+id/btnScan"
+        android:layout_width="200dp"
+        android:layout_height="56dp"
+        android:text="Scan QR Code"
+        android:textSize="16sp" />
+
+</LinearLayout>
